@@ -18,7 +18,7 @@ export interface Restaurant {
   distanceFromRoute: number; // meters perpendicular from route
   driveThruAvailable: boolean | null;
   photoName?: string;
-  openNow?: boolean | null;
+  openAtArrival: boolean | null; // null = hours unknown
 }
 
 export interface RouteInfo {
@@ -50,6 +50,12 @@ export interface GooglePlace {
   primaryType?: string;
   types?: string[];
   driveThroughAvailable?: boolean;
-  currentOpeningHours?: { openNow: boolean };
+  regularOpeningHours?: { periods?: OpeningPeriod[] };
+  utcOffsetMinutes?: number;
   photos?: Array<{ name: string }>;
+}
+
+export interface OpeningPeriod {
+  open: { day: number; hour: number; minute: number }; // day 0 = Sunday
+  close?: { day: number; hour: number; minute: number }; // absent = open 24/7
 }

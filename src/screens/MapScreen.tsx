@@ -50,25 +50,43 @@ export default function MapScreen() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const departureTime = useRef<Date>(new Date());
 
-  const handleUseCurrentLocation = useCallback(async () => {
+  const getCurrentCoords = useCallback(async (): Promise<Coordinates | null> => {
     const { status } = await Location.requestForegroundPermissionsAsync();
     if (status !== 'granted') {
       Alert.alert('Permission needed', 'Allow location access to use your current position.');
-      return;
+      return null;
     }
     try {
       const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const coords: Coordinates = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+      return { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+    } catch {
+      Alert.alert('Error', 'Could not get your current location.');
+      return null;
+    }
+  }, []);
+
+  // Sets the route's starting point to where the user is
+  const handleUseCurrentLocation = useCallback(async () => {
+    const coords = await getCurrentCoords();
+    if (!coords) return;
+    try {
       const [geo] = await Location.reverseGeocodeAsync(coords);
       const label = geo
         ? [geo.street, geo.city, geo.region].filter(Boolean).join(', ')
         : 'Current Location';
       setOrigin({ address: label, coords });
-      mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.06, longitudeDelta: 0.06 }, 600);
     } catch {
-      Alert.alert('Error', 'Could not get your current location.');
+      setOrigin({ address: 'Current Location', coords });
     }
-  }, []);
+    mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.06, longitudeDelta: 0.06 }, 600);
+  }, [getCurrentCoords]);
+
+  // Only moves the map; leaves the route alone
+  const handleRecenter = useCallback(async () => {
+    const coords = await getCurrentCoords();
+    if (!coords) return;
+    mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.06, longitudeDelta: 0.06 }, 600);
+  }, [getCurrentCoords]);
 
   const handleOriginChange = useCallback((address: string, coords: Coordinates) => {
     setOrigin({ address, coords });
@@ -175,7 +193,8 @@ export default function MapScreen() {
         ))}
       </MapView>
 
-      {/* Search card floats over map */}
+      {/* Search card floats over map; the recenter button sits just below it so the
+          bottom sheet never covers it */}
       <SafeAreaView style={styles.searchOverlay} edges={['top']} pointerEvents="box-none">
         <SearchCard
           onOriginChange={handleOriginChange}
@@ -183,12 +202,10 @@ export default function MapScreen() {
           onUseCurrentLocation={handleUseCurrentLocation}
           originLabel={origin?.address}
         />
+        <TouchableOpacity style={styles.locFab} onPress={handleRecenter}>
+          <Text style={styles.locFabIcon}>⊕</Text>
+        </TouchableOpacity>
       </SafeAreaView>
-
-      {/* My location button */}
-      <TouchableOpacity style={styles.locFab} onPress={handleUseCurrentLocation}>
-        <Text style={styles.locFabIcon}>⊕</Text>
-      </TouchableOpacity>
 
       <RestaurantBottomSheet
         ref={sheetRef}
@@ -214,9 +231,9 @@ const styles = StyleSheet.create({
     zIndex: 20,
   },
   locFab: {
-    position: 'absolute',
-    right: 14,
-    bottom: 160,
+    alignSelf: 'flex-end',
+    marginTop: 12,
+    marginRight: 14,
     width: 44,
     height: 44,
     borderRadius: 22,
@@ -228,7 +245,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 4,
-    zIndex: 10,
   },
   locFabIcon: { fontSize: 24, color: COLORS.primary },
   // Origin marker: filled blue circle with white ring

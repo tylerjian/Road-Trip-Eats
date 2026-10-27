@@ -43,7 +43,7 @@ function formatTypeName(primaryType: string | null): string {
     .replace(/\b\w/g, c => c.toUpperCase())
     .replace('Restaurant', '')
     .replace('Shop', '')
-    .trim();
+    .trim() || 'Restaurant';
 }
 
 export default function RestaurantCard({ restaurant, onPress, isSelected }: Props) {
@@ -75,7 +75,7 @@ export default function RestaurantCard({ restaurant, onPress, isSelected }: Prop
           </Text>
         </View>
 
-        <View style={styles.row}>
+        <View style={styles.metaRow}>
           {restaurant.rating !== null && (
             <Text style={styles.rating}>★ {restaurant.rating.toFixed(1)}</Text>
           )}
@@ -85,8 +85,8 @@ export default function RestaurantCard({ restaurant, onPress, isSelected }: Prop
               <Text style={styles.badgeText}>Drive-Thru</Text>
             </View>
           )}
-          {restaurant.openNow === false && (
-            <Text style={styles.closed}>Closed</Text>
+          {restaurant.openAtArrival === false && (
+            <Text style={styles.closed}>Closed when you arrive</Text>
           )}
         </View>
       </View>
@@ -131,6 +131,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 3,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   name: {
     fontSize: 15,

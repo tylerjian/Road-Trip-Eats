@@ -1,3 +1,5 @@
+import { OpeningPeriod } from '../types';
+
 export function formatTime(date: Date): string {
   return date.toLocaleTimeString('en-US', {
     hour: 'numeric',
@@ -29,5 +31,34 @@ export function isWithinTimeSlot(time: Date, start: Date | null, end: Date | nul
   const t = time.getHours() * 60 + time.getMinutes();
   const s = start ? start.getHours() * 60 + start.getMinutes() : 0;
   const e = end ? end.getHours() * 60 + end.getMinutes() : 23 * 60 + 59;
-  return t >= s && t <= e;
+  // A slot like 21:00–02:00 wraps past midnight
+  return s <= e ? t >= s && t <= e : t >= s || t <= e;
+}
+
+const MINUTES_PER_WEEK = 7 * 24 * 60;
+
+function toWeekMinute(p: { day: number; hour: number; minute: number }): number {
+  return p.day * 24 * 60 + p.hour * 60 + p.minute;
+}
+
+// Whether a place is open at `time`, given its weekly hours in its own local time.
+// Returns null when the hours are unknown.
+export function isOpenAt(
+  periods: OpeningPeriod[] | undefined,
+  utcOffsetMinutes: number | undefined,
+  time: Date,
+): boolean | null {
+  if (!periods || periods.length === 0 || utcOffsetMinutes === undefined) return null;
+
+  // Shift into the place's time zone, then read the fields back as UTC
+  const local = new Date(time.getTime() + utcOffsetMinutes * 60000);
+  const t = local.getUTCDay() * 24 * 60 + local.getUTCHours() * 60 + local.getUTCMinutes();
+
+  return periods.some(({ open, close }) => {
+    if (!close) return true;
+    const start = toWeekMinute(open);
+    let end = toWeekMinute(close);
+    if (end <= start) end += MINUTES_PER_WEEK; // e.g. opens Saturday, closes Sunday
+    return (t >= start && t < end) || (t + MINUTES_PER_WEEK >= start && t + MINUTES_PER_WEEK < end);
+  });
 }

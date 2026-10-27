@@ -113,7 +113,7 @@ const RestaurantBottomSheet = forwardRef<BottomSheet, Props>(
             </Text>
           </TouchableOpacity>
 
-          {([1, 2, 3] as const).map(level => (
+          {([1, 2, 3, 4] as const).map(level => (
             <TouchableOpacity
               key={level}
               style={[styles.chip, filters.priceRange.includes(level) && styles.chipOn]}

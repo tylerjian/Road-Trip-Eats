@@ -22,7 +22,7 @@ const TIME_PRESETS = [
   { label: 'Breakfast', startH: 6, startM: 0, endH: 10, endM: 0 },
   { label: 'Lunch', startH: 11, startM: 0, endH: 14, endM: 0 },
   { label: 'Dinner', startH: 17, startM: 0, endH: 21, endM: 0 },
-  { label: 'Late Night', startH: 21, startM: 0, endH: 23, endM: 59 },
+  { label: 'Late Night', startH: 21, startM: 0, endH: 2, endM: 0 },
 ];
 
 function makeDate(hours: number, minutes: number): Date {
